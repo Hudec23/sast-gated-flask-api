@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# UV / virtualenv
+.venv/
+
+# SQLite data
+data/*.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Local SAST reports
+bandit-report.json
+semgrep-report.json
+semgrep-error-report.json
+semgrep-warning-report.json

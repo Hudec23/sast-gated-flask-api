@@ -1,0 +1,87 @@
+name: SAST
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run pytest
+        run: uv run pytest
+
+  bandit:
+    name: Bandit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Run Bandit (fail on Medium+ severity, Medium+ confidence)
+        run: uv run bandit -r src/webshop -ll -ii
+
+      - name: Generate Bandit JSON report
+        if: always()
+        run: uv run bandit -r src/webshop -f json -o bandit-report.json || true
+
+      - name: Upload Bandit report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-report
+          path: bandit-report.json
+
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+    container:
+      image: semgrep/semgrep:latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Semgrep scan
+        run: |
+          semgrep scan \
+            --config p/python \
+            --config p/flask \
+            --config p/security-audit \
+            --config p/secrets \
+            --severity ERROR \
+            --error \
+            --json \
+            --output /tmp/semgrep.json \
+            src/webshop
+
+      - name: Upload Semgrep report
+        if: always()
+        run: cp /tmp/semgrep.json semgrep-report.json
+
+      - name: Upload Semgrep artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-report
+          path: semgrep-report.json

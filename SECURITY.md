@@ -4,7 +4,9 @@
 
 This repository is an **intentionally vulnerable** Flask webshop API built for DevSecOps portfolio work. Phase 2 adds a GitHub Actions pipeline that runs **Bandit** and **Semgrep** on every push and pull request.
 
-**The pipeline is expected to fail on `main`.** That is by design: it proves severity-based SAST gating works. Twelve vulnerabilities (`V01`–`V12`) are planted in source code and marked with `# VULN:` comments. No baselines, `# nosec` suppressions, or allowlists are used.
+**The pipeline is expected to fail on `main`.** That is by design: it proves severity-based SAST gating works. Fourteen vulnerabilities (`V01`–`V14`) are planted in source code and marked with `# VULN:` comments. No baselines, `# nosec` suppressions, or allowlists are used.
+
+For the **pattern match vs taint tracking** interview narrative (V13/V14 paired demos), see **[NOTES.md](NOTES.md)**.
 
 Do not deploy this application publicly.
 
@@ -47,6 +49,7 @@ uv run semgrep scan \
   --config p/flask \
   --config p/security-audit \
   --config p/secrets \
+  --config .semgrep/ \
   --severity ERROR \
   --error \
   src/webshop
@@ -57,6 +60,7 @@ uv run semgrep scan \
   --config p/flask \
   --config p/security-audit \
   --config p/secrets \
+  --config .semgrep/ \
   src/webshop
 ```
 
@@ -69,7 +73,7 @@ uv run semgrep scan \
 | Tool | Role | Why here |
 |------|------|----------|
 | **Bandit** | Python AST analyzer | Catches Python-native sinks: `eval`, `pickle.loads`, `subprocess shell=True`, `verify=False`, weak MD5 — with low setup cost |
-| **Semgrep** | Pattern-based, multi-rulepack | Catches framework-aware issues: SQLi taint, SSRF, command injection — using maintained community rulesets (`p/python`, `p/flask`, `p/security-audit`, `p/secrets`) |
+| **Semgrep** | Pattern-based + taint rules | SQLi/SSRF taint, XSS, command injection; custom taint rule for V14 — rulesets (`p/python`, `p/flask`, `p/security-audit`, `p/secrets`, `.semgrep/`) |
 
 Together they provide complementary coverage without a SaaS account or enterprise license.
 
@@ -81,6 +85,18 @@ Together they provide complementary coverage without a SaaS account or enterpris
 | **SonarCloud** | Strong dashboards and quality gates; requires SaaS account; less transparent in raw YAML |
 | **Snyk Code** | Good IDE integration; blurs SAST/SCA; account required |
 | **pip-audit / Gitleaks** | Complementary (SCA / secrets-in-git), not source SAST — good Phase 3 additions |
+
+---
+
+## Pattern match vs taint (V13 / V14)
+
+| ID | Style | Bandit (CI) | Semgrep (CI) | Notes |
+|----|-------|-------------|--------------|-------|
+| **V13** | Direct pattern — `eval(request input)` one line | **B307** | `eval-injection`, `eval-detected` | Both tools agree; pattern suffices |
+| **V14** | Multi-hop taint — `request` → helpers → `subprocess.run(..., shell=False)` | — (B603 is LOW, filtered) | **`flask-tainted-subprocess-no-shell`** (custom) | Taint + custom rule required |
+| **V05** | Multi-hop but `shell=True` on sink | **B602** | `subprocess-shell-true` | Looks like taint demo; both use pattern on sink |
+
+Full write-up: **[NOTES.md](NOTES.md)**
 
 ---
 
@@ -102,6 +118,8 @@ Maps planted vulnerabilities to what each tool actually reported.
 | V10 | `pickle.loads()` | A08 Integrity | `routes/auth.py:23` | **B301** | `avoid-pickle` (WARNING only) | Bandit only (CI) |
 | V11 | Open redirect | A01 Broken Access Control | `routes/auth.py:35` | Not detected | Not detected | **Gap** |
 | V12 | MD5 password hash | A02 Crypto Failures | `routes/auth.py:49` | **B324** | `insecure-hash-algorithm-md5` (WARNING only) | Bandit only (CI) |
+| V13 | One-line `eval(input)` | A03 Injection | `routes/pricing.py:28` | **B307** | `eval-injection`, `eval-detected` | Both |
+| V14 | Multi-hop subprocess (no shell) | A03 Injection | `routes/admin.py:61` | — (B603 LOW) | `flask-tainted-subprocess-no-shell` | Semgrep only (CI) |
 
 ### Bandit findings at CI threshold (`-ll -ii`)
 
@@ -111,6 +129,7 @@ Maps planted vulnerabilities to what each tool actually reported.
 | B301 | Medium | `routes/auth.py:23` | V10 |
 | B324 | High | `routes/auth.py:49` | V12 |
 | B307 | Medium | `routes/pricing.py:19` | V03 |
+| B307 | Medium | `routes/pricing.py:28` | V13 |
 | B501 | High | `routes/products.py:50` | V08 |
 
 ### Semgrep findings at CI threshold (`--severity ERROR`)
@@ -122,6 +141,8 @@ Maps planted vulnerabilities to what each tool actually reported.
 | `ssrf-injection-requests` | `routes/products.py:45-50` | V08 |
 | `ssrf-requests` | `routes/products.py:50` | V08 |
 | `disabled-cert-validation` | `routes/products.py:50` | V08 |
+| `eval-injection` | `routes/pricing.py:28` | V13 |
+| `flask-tainted-subprocess-no-shell` | `routes/admin.py:61` | V14 |
 
 ---
 
@@ -137,6 +158,7 @@ These planted bugs are **not reliably caught** by the current CI configuration. 
 | V07 | IDOR is missing authorization logic — not a code pattern | Manual review, integration tests, DAST |
 | V09 | XSS rules fire at WARNING, not ERROR | Add `--severity WARNING` gate or custom rule |
 | V11 | Open redirect not matched by default rulesets | Custom Semgrep rule for `redirect(request.args` |
+| V14 | Stock rules miss multi-hop subprocess without `shell=True` | Custom taint rule in `.semgrep/tainted-subprocess.yml` (now in CI) |
 
 **Recommendation for production:** layer SAST with DAST (OWASP ZAP), dependency scanning (pip-audit), secrets scanning (Gitleaks), and periodic manual threat modeling.
 
@@ -159,6 +181,8 @@ How each vulnerability class should be fixed in a real codebase:
 | V10 | Safe serialization | JSON or signed tokens (JWT); never `pickle` on untrusted input |
 | V11 | Same-origin redirects | Allowlist paths: `if not next_url.startswith("/"): raise` |
 | V12 | Strong hashing | `bcrypt` or `argon2` via `werkzeug.security` |
+| V13, V03 | Remove `eval` | Safe math parser or pre-defined discount table |
+| V14 | Validated argv, no user-influenced args | Fixed command template; pass user data via stdin or env after validation |
 
 ---
 

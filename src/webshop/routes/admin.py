@@ -8,6 +8,16 @@ from webshop import config
 admin_bp = Blueprint("admin", __name__)
 
 
+def _normalize_archive_name(raw: str) -> str:
+    """Fake sanitization — strips and replaces spaces only."""
+    return raw.strip().replace(" ", "_")
+
+
+def _build_archive_args(name: str) -> list[str]:
+    """Build tar command arguments for an archive export."""
+    return ["tar", "-czf", f"/tmp/{name}.tar.gz", name]
+
+
 @admin_bp.get("/admin/debug")
 def admin_debug():
     """Debug endpoint — intentionally leaks hardcoded secrets."""
@@ -35,6 +45,24 @@ def reindex_search():
         {
             "index_name": index_name,
             "stdout": result.stdout.strip(),
+            "returncode": result.returncode,
+        }
+    )
+
+
+@admin_bp.post("/admin/export")
+def export_archive():
+    """Archive export — multi-hop taint demo without shell=True (V14)."""
+    data = request.get_json(silent=True) or {}
+    raw_name = data.get("archive_name", "export")
+    label = _normalize_archive_name(raw_name)
+    args = _build_archive_args(label)
+    # VULN: V14-TaintOnly — user input reaches subprocess across hops; no shell=True; SAST demo only
+    result = subprocess.run(args, shell=False, capture_output=True, text=True, check=False)
+    return jsonify(
+        {
+            "archive_name": label,
+            "command": args,
             "returncode": result.returncode,
         }
     )

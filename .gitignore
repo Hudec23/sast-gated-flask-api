@@ -16,7 +16,8 @@ data/*.db
 .vscode/
 *.swp
 
-# Local SAST reports
+# Local SAST reports (regenerate with bandit/semgrep; CI uploads artifacts)
+*-report.json
 bandit-report.json
 semgrep-report.json
 semgrep-error-report.json

@@ -69,6 +69,7 @@ jobs:
             --config p/flask \
             --config p/security-audit \
             --config p/secrets \
+            --config .semgrep/ \
             --severity ERROR \
             --error \
             --json \

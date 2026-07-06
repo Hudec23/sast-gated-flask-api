@@ -18,3 +18,12 @@ def calculate_discount():
     # VULN: V03-Eval — executes user-supplied expression; SAST demo only
     discounted = eval(formula, {"__builtins__": {}}, {"base_price": base_price})
     return jsonify({"base_price": base_price, "formula": formula, "result": discounted})
+
+
+@pricing_bp.post("/pricing/eval-direct")
+def eval_direct():
+    """One-line eval — direct pattern match demo for SAST comparison (V13)."""
+    data = request.get_json(silent=True) or {}
+    # VULN: V13-DirectPattern — request input to eval on one line; SAST demo only
+    result = eval(data.get("expr", "0"))
+    return jsonify({"result": result})

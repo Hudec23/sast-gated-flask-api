@@ -1,0 +1,34 @@
+rules:
+  - id: flask-tainted-subprocess-no-shell
+    languages: [python]
+    severity: ERROR
+    message: >-
+      Flask request data flows into subprocess.run() arguments across one or
+      more hops without shell=True. Bandit pattern rules miss this; taint
+      tracking is required.
+    metadata:
+      category: security
+      cwe: "CWE-78: OS Command Injection"
+      owasp: "A03:2021 - Injection"
+      vulnerability: V14-TaintOnly
+    mode: taint
+    pattern-sources:
+      - pattern: request.json.get(...)
+      - pattern: request.args.get(...)
+      - pattern: request.form.get(...)
+      - patterns:
+          - pattern: request.get_json(...)
+          - pattern-not: request.get_json(silent=True)
+      - pattern: request.get_json(silent=True)
+    pattern-sinks:
+      - patterns:
+          - pattern: subprocess.run($CMD, ...)
+          - pattern-not: subprocess.run($CMD, shell=True, ...)
+          - focus-metavariable: $CMD
+    pattern-propagators:
+      - pattern: $VAR = $EXPR
+        from: $EXPR
+        to: $VAR
+      - pattern: return $EXPR
+        from: $EXPR
+        to: $FUNC(...)

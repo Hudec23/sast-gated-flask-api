@@ -4,7 +4,7 @@
 
 Intentionally vulnerable Flask webshop API for DevSecOps portfolio work. Phase 1 delivers the app with planted bugs; Phase 2 adds Semgrep + Bandit gating in GitHub Actions.
 
-**Pipeline status on `main` is expected to FAIL** — Bandit and Semgrep detect the deliberate vulnerabilities. See [SECURITY.md](SECURITY.md) for the full analysis.
+**Pipeline status on `main` is expected to FAIL** — Bandit and Semgrep detect the deliberate vulnerabilities. See [SECURITY.md](SECURITY.md) for the full analysis and [NOTES.md](NOTES.md) for the pattern-match vs taint-tracking story (V13/V14).
 
 **Do not deploy this application publicly.** Every vulnerability is deliberate and documented for SAST training.
 
@@ -29,8 +29,10 @@ The API listens on `http://127.0.0.1:5000`. SQLite data is created automatically
 | GET | `/search/render` | `?q=` | **V09** reflected XSS |
 | GET | `/orders/<id>` | path `id` | **V07** IDOR |
 | POST | `/pricing/calculate` | `{"base_price", "formula"}` | **V03** eval |
+| POST | `/pricing/eval-direct` | `{"expr"}` | **V13** direct-pattern eval |
 | GET | `/admin/debug` | — | **V04** secret leak |
-| POST | `/admin/reindex` | `{"index_name"}` | **V05** command injection |
+| POST | `/admin/reindex` | `{"index_name"}` | **V05** command injection (pattern) |
+| POST | `/admin/export` | `{"archive_name"}` | **V14** multi-hop taint subprocess |
 | GET | `/files/<path>` | path `filepath` | **V06** path traversal |
 | POST | `/session/restore` | `{"session_data"}` | **V10** pickle |
 | GET | `/login/redirect` | `?next=` | **V11** open redirect |
@@ -58,6 +60,8 @@ grep -rn "VULN:" src/webshop/
 | V10 | `POST /session/restore` | `pickle.loads()` on untrusted data | A08 Integrity | `routes/auth.py` | base64-encoded pickle payload |
 | V11 | `GET /login/redirect?next=` | Open redirect | A01 Broken Access Control | `routes/auth.py` | `?next=https://evil.com` |
 | V12 | `POST /auth/check` | MD5 password comparison | A02 Crypto Failures | `routes/auth.py` | `{"email":"alice@example.com","password":"hello"}` |
+| V13 | `POST /pricing/eval-direct` | One-line `eval(request input)` | A03 Injection | `routes/pricing.py` | `{"expr":"2+2"}` |
+| V14 | `POST /admin/export` | Multi-hop taint → `subprocess` (no shell) | A03 Injection | `routes/admin.py` | `{"archive_name":"x;id"}` |
 
 ### Sample curl commands
 
@@ -97,8 +101,8 @@ src/webshop/
     ├── health.py    # safe baseline
     ├── products.py  # V01, V02, V08, V09
     ├── orders.py    # V07
-    ├── pricing.py   # V03
-    ├── admin.py     # V04, V05, V06
+    ├── pricing.py   # V03, V13
+    ├── admin.py     # V04, V05, V06, V14
     └── auth.py      # V10, V11, V12
 ```
 
@@ -124,6 +128,7 @@ uv run semgrep scan \
   --config p/flask \
   --config p/security-audit \
   --config p/secrets \
+  --config .semgrep/ \
   --severity ERROR \
   --error \
   src/webshop
@@ -141,7 +146,9 @@ Workflow: [`.github/workflows/sast.yml`](.github/workflows/sast.yml)
 
 ## Security analysis
 
-Full SAST narrative — tool rationale, findings mapped to V01–V12, blind spots, and production remediation: **[SECURITY.md](SECURITY.md)**
+Full SAST narrative — tool rationale, findings mapped to V01–V14, blind spots, and production remediation: **[SECURITY.md](SECURITY.md)**
+
+Pattern match vs taint tracking interview notes (V13/V14 paired demos): **[NOTES.md](NOTES.md)**
 
 ## License
 

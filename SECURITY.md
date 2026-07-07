@@ -8,6 +8,8 @@ This repository is an **intentionally vulnerable** Flask webshop API built for D
 
 For the **pattern match vs taint tracking** interview narrative (V13/V14 paired demos), see **[NOTES.md](NOTES.md)**.
 
+For **secrets-in-git** scanning (Gitleaks pre-commit + CI, distinct from V04 hardcoded secrets in source), see **[SECRETS.md](SECRETS.md)**.
+
 Do not deploy this application publicly.
 
 ---

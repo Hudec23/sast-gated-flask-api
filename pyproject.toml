@@ -20,6 +20,7 @@ build-backend = "uv_build"
 dev = [
     "bandit>=1.9.4",
     "httpx>=0.28.1",
+    "pre-commit>=4.0.0",
     "pytest>=9.1.1",
     "semgrep>=1.168.0",
 ]

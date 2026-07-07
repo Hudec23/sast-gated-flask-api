@@ -1,10 +1,11 @@
 # SAST-Gated Flask API
 
 [![SAST](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sast.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sast.yml)
+[![Secrets](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/secrets.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/secrets.yml)
 
-Intentionally vulnerable Flask webshop API for DevSecOps portfolio work. Phase 1 delivers the app with planted bugs; Phase 2 adds Semgrep + Bandit gating in GitHub Actions.
+Intentionally vulnerable Flask webshop API for DevSecOps portfolio work. Phase 1 delivers the app with planted bugs; Phase 2 adds Semgrep + Bandit gating; Phase 3 adds Gitleaks secrets scanning (pre-commit + CI).
 
-**Pipeline status on `main` is expected to FAIL** — Bandit and Semgrep detect the deliberate vulnerabilities. See [SECURITY.md](SECURITY.md) for the full analysis and [NOTES.md](NOTES.md) for the pattern-match vs taint-tracking story (V13/V14).
+**Pipeline status on `main`:** SAST workflow is expected to **FAIL** (deliberate vulns). Secrets workflow is expected to **PASS** (V04 allowlisted). See [SECURITY.md](SECURITY.md), [NOTES.md](NOTES.md), and [SECRETS.md](SECRETS.md).
 
 **Do not deploy this application publicly.** Every vulnerability is deliberate and documented for SAST training.
 
@@ -134,9 +135,21 @@ uv run semgrep scan \
   src/webshop
 ```
 
+## Secrets scanning (local)
+
+Phase 3 — Gitleaks via pre-commit and CI. Full narrative: **[SECRETS.md](SECRETS.md)**
+
+```bash
+uv sync --dev
+uv run pre-commit install          # once per clone
+uv run pre-commit run gitleaks --all-files
+```
+
+Pre-commit blocks commits with staged secrets. CI scans **full git history** as a backstop (`git commit --no-verify` still fails on push).
+
 ## CI pipeline
 
-Workflow: [`.github/workflows/sast.yml`](.github/workflows/sast.yml)
+### SAST — [`.github/workflows/sast.yml`](.github/workflows/sast.yml)
 
 | Job | Tool | Gate |
 |-----|------|------|
@@ -144,11 +157,19 @@ Workflow: [`.github/workflows/sast.yml`](.github/workflows/sast.yml)
 | `bandit` | Bandit | `-ll -ii` (Medium+) |
 | `semgrep` | Semgrep OSS | `--severity ERROR --error` |
 
+### Secrets — [`.github/workflows/secrets.yml`](.github/workflows/secrets.yml)
+
+| Job | Tool | Gate |
+|-----|------|------|
+| `gitleaks` | Gitleaks | Fail on any detected leak (`fetch-depth: 0`) |
+
 ## Security analysis
 
 Full SAST narrative — tool rationale, findings mapped to V01–V14, blind spots, and production remediation: **[SECURITY.md](SECURITY.md)**
 
 Pattern match vs taint tracking interview notes (V13/V14 paired demos): **[NOTES.md](NOTES.md)**
+
+Secrets leak prevention — pre-commit vs CI, demo branch, history scrubbing: **[SECRETS.md](SECRETS.md)**
 
 ## License
 

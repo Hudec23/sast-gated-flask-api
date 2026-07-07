@@ -1,0 +1,13 @@
+# Gitleaks configuration for sast-gated-flask-api
+# Docs: https://github.com/gitleaks/gitleaks#configuration
+
+title = "webshop gitleaks config"
+
+[extend]
+useDefault = true
+
+# V04 — intentional training secrets in source (SAST demo, not real credentials).
+# Narrow path allowlist so new leaks (e.g. demo/leaked.env) still fail the pipeline.
+[[allowlists]]
+description = "V04 intentional training secrets (SAST demo only)"
+paths = ['''src/webshop/config\.py''']

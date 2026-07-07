@@ -2,10 +2,11 @@
 
 [![SAST](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sast.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sast.yml)
 [![Secrets](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/secrets.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/secrets.yml)
+[![SCA](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sca.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sca.yml)
 
-Intentionally vulnerable Flask webshop API for DevSecOps portfolio work. Phase 1 delivers the app with planted bugs; Phase 2 adds Semgrep + Bandit gating; Phase 3 adds Gitleaks secrets scanning (pre-commit + CI).
+Intentionally vulnerable Flask webshop API for DevSecOps portfolio work. Phase 1 delivers the app with planted bugs; Phase 2 adds Semgrep + Bandit gating; Phase 3 adds Gitleaks secrets scanning (pre-commit + CI); Phase 4 adds pip-audit SCA + Dependabot.
 
-**Pipeline status on `main`:** SAST workflow is expected to **FAIL** (deliberate vulns). Secrets workflow is expected to **PASS** (V04 allowlisted). See [SECURITY.md](SECURITY.md), [NOTES.md](NOTES.md), and [SECRETS.md](SECRETS.md).
+**Pipeline status on `main`:** SAST workflow is expected to **FAIL** (deliberate vulns). Secrets workflow is expected to **PASS** (V04 allowlisted). SCA workflow is expected to **FAIL** (pinned vulnerable deps). See [SECURITY.md](SECURITY.md), [NOTES.md](NOTES.md), [SECRETS.md](SECRETS.md), and [SCA.md](SCA.md).
 
 **Do not deploy this application publicly.** Every vulnerability is deliberate and documented for SAST training.
 
@@ -147,6 +148,17 @@ uv run pre-commit run gitleaks --all-files
 
 Pre-commit blocks commits with staged secrets. CI scans **full git history** as a backstop (`git commit --no-verify` still fails on push).
 
+## Dependency scanning (local)
+
+Phase 4 — pip-audit in CI + Dependabot auto-PRs. Full narrative: **[SCA.md](SCA.md)**
+
+```bash
+uv sync --dev
+uv run pip-audit --desc
+```
+
+Pinned vulnerable versions (`requests==2.31.0`, `urllib3==1.26.17`) are intentional — CI is expected to fail until a Dependabot bump is merged.
+
 ## CI pipeline
 
 ### SAST — [`.github/workflows/sast.yml`](.github/workflows/sast.yml)
@@ -163,6 +175,14 @@ Pre-commit blocks commits with staged secrets. CI scans **full git history** as 
 |-----|------|------|
 | `gitleaks` | Gitleaks | Fail on any detected leak (`fetch-depth: 0`) |
 
+### SCA — [`.github/workflows/sca.yml`](.github/workflows/sca.yml)
+
+| Job | Tool | Gate |
+|-----|------|------|
+| `pip-audit` | pip-audit | Fail on any known CVE (`--desc`) |
+
+Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) opens weekly bump PRs for `uv` and `github-actions`.
+
 ## Security analysis
 
 Full SAST narrative — tool rationale, findings mapped to V01–V14, blind spots, and production remediation: **[SECURITY.md](SECURITY.md)**
@@ -170,6 +190,8 @@ Full SAST narrative — tool rationale, findings mapped to V01–V14, blind spot
 Pattern match vs taint tracking interview notes (V13/V14 paired demos): **[NOTES.md](NOTES.md)**
 
 Secrets leak prevention — pre-commit vs CI, demo branch, history scrubbing: **[SECRETS.md](SECRETS.md)**
+
+Dependency CVE scanning — pip-audit, Dependabot, CVE-2023-32681 + V08 narrative: **[SCA.md](SCA.md)**
 
 ## License
 

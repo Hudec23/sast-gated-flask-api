@@ -10,6 +10,8 @@ For the **pattern match vs taint tracking** interview narrative (V13/V14 paired 
 
 For **secrets-in-git** scanning (Gitleaks pre-commit + CI, distinct from V04 hardcoded secrets in source), see **[SECRETS.md](SECRETS.md)**.
 
+For **dependency CVE scanning** (pip-audit + Dependabot, distinct from application vulns), see **[SCA.md](SCA.md)**.
+
 Do not deploy this application publicly.
 
 ---
@@ -86,7 +88,8 @@ Together they provide complementary coverage without a SaaS account or enterpris
 | **CodeQL** | Excellent for GitHub-native SARIF and deep taint analysis; heavier setup; rules less approachable for a portfolio demo |
 | **SonarCloud** | Strong dashboards and quality gates; requires SaaS account; less transparent in raw YAML |
 | **Snyk Code** | Good IDE integration; blurs SAST/SCA; account required |
-| **pip-audit / Gitleaks** | Complementary (SCA / secrets-in-git), not source SAST — good Phase 3 additions |
+| **Gitleaks** | Complementary (secrets-in-git), not source SAST — Phase 3 |
+| **pip-audit** | Complementary (SCA / dependency CVEs), not source SAST — Phase 4 |
 
 ---
 
@@ -201,7 +204,7 @@ How each vulnerability class should be fixed in a real codebase:
 
 ## Future work
 
-- **`remediated` branch** — fix all V01–V12, demonstrate green pipeline
-- **pip-audit job** — dependency CVE scanning (SCA, not SAST)
-- **Gitleaks job** — catch V04 secrets in git history
+- **`remediated` branch** — fix all V01–V14, demonstrate green SAST pipeline
+- **Gitleaks job** — implemented in Phase 3 ([SECRETS.md](SECRETS.md))
+- **pip-audit job** — implemented in Phase 4 ([SCA.md](SCA.md))
 - **DAST with OWASP ZAP** — catch V07 IDOR and runtime XSS

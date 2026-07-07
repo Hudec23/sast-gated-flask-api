@@ -209,7 +209,7 @@ Production rules:
 | Fake AWS key in `.env` | No (Bandit) | Maybe | **Yes** (unless AWS doc example — allowlisted by default) |
 | Secret only in old commit | No | No | **Yes** |
 
-See also: [NOTES.md](NOTES.md) (pattern vs taint), [SECURITY.md](SECURITY.md) (SAST findings).
+See also: [NOTES.md](NOTES.md) (pattern vs taint), [SECURITY.md](SECURITY.md) (SAST findings), [SCA.md](SCA.md) (dependency CVEs).
 
 ---
 
@@ -222,5 +222,6 @@ On failure, check the **Secrets** workflow run in GitHub Actions. Gitleaks print
 ## Future work
 
 - SARIF upload to GitHub Security tab
-- `pip-audit` job (dependency CVEs — SCA, not secrets-in-git)
 - TruffleHog for optional live verification of whether a secret is still active
+
+Dependency CVE scanning is covered in **[SCA.md](SCA.md)** (Phase 4).

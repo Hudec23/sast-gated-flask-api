@@ -3,10 +3,11 @@
 [![SAST](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sast.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sast.yml)
 [![Secrets](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/secrets.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/secrets.yml)
 [![SCA](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sca.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/sca.yml)
+[![DAST](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/dast.yml/badge.svg)](https://github.com/Hudec23/sast-gated-flask-api/actions/workflows/dast.yml)
 
-Intentionally vulnerable Flask webshop API for DevSecOps portfolio work. Phase 1 delivers the app with planted bugs; Phase 2 adds Semgrep + Bandit gating; Phase 3 adds Gitleaks secrets scanning (pre-commit + CI); Phase 4 adds pip-audit SCA + Dependabot.
+Intentionally vulnerable Flask webshop API for DevSecOps portfolio work. Phase 1 delivers the app with planted bugs; Phase 2 adds Semgrep + Bandit gating; Phase 3 adds Gitleaks secrets scanning (pre-commit + CI); Phase 4 adds pip-audit SCA + Dependabot; Phase 5 adds OWASP ZAP DAST in CI.
 
-**Pipeline status on `main`:** SAST workflow is expected to **FAIL** (deliberate vulns). Secrets workflow is expected to **PASS** (V04 allowlisted). SCA workflow is expected to **FAIL** (pinned vulnerable deps). See [SECURITY.md](SECURITY.md), [NOTES.md](NOTES.md), [SECRETS.md](SECRETS.md), and [SCA.md](SCA.md).
+**Pipeline status on `main`:** SAST workflow is expected to **FAIL** (deliberate vulns). Secrets workflow is expected to **PASS** (V04 allowlisted). SCA workflow is expected to **FAIL** (pinned vulnerable deps). DAST workflow is expected to **FAIL** on `dast-before` (runtime findings). See [SECURITY.md](SECURITY.md), [NOTES.md](NOTES.md), [SECRETS.md](SECRETS.md), [SCA.md](SCA.md), and [DAST.md](DAST.md).
 
 **Do not deploy this application publicly.** Every vulnerability is deliberate and documented for SAST training.
 
@@ -159,6 +160,20 @@ uv run pip-audit --desc
 
 Pinned vulnerable versions (`requests==2.31.0`, `urllib3==1.26.17`) are intentional — CI is expected to fail until a Dependabot bump is merged.
 
+## DAST (local)
+
+Phase 5 — OWASP ZAP baseline against a running app. Full narrative: **[DAST.md](DAST.md)**
+
+```bash
+uv sync
+uv run flask --app webshop:create_app run --host 127.0.0.1 --port 5000 &
+./scripts/wait-for-health.sh
+docker run --rm --network host -v "$PWD:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
+  zap-baseline.py -t http://127.0.0.1:5000 -l dast/zap-seeds.txt -r dast-report.html
+```
+
+CI runs `dast-before` (gates `main`, expected fail) and `dast-after` (V11 remediated demo, informational).
+
 ## CI pipeline
 
 ### SAST — [`.github/workflows/sast.yml`](.github/workflows/sast.yml)
@@ -183,6 +198,13 @@ Pinned vulnerable versions (`requests==2.31.0`, `urllib3==1.26.17`) are intentio
 
 Dependabot ([`.github/dependabot.yml`](.github/dependabot.yml)) opens weekly bump PRs for `uv` and `github-actions`.
 
+### DAST — [`.github/workflows/dast.yml`](.github/workflows/dast.yml)
+
+| Job | Tool | Gate |
+|-----|------|------|
+| `dast-before` | OWASP ZAP baseline | Fail on alerts (`fail_action: true`) |
+| `dast-after` | OWASP ZAP baseline | Informational (`DAST_REMEDIATED=1`, V11 fixed) |
+
 ## Security analysis
 
 Full SAST narrative — tool rationale, findings mapped to V01–V14, blind spots, and production remediation: **[SECURITY.md](SECURITY.md)**
@@ -192,6 +214,8 @@ Pattern match vs taint tracking interview notes (V13/V14 paired demos): **[NOTES
 Secrets leak prevention — pre-commit vs CI, demo branch, history scrubbing: **[SECRETS.md](SECRETS.md)**
 
 Dependency CVE scanning — pip-audit, Dependabot, CVE-2023-32681 + V08 narrative: **[SCA.md](SCA.md)**
+
+Runtime security testing — OWASP ZAP baseline, V11 open redirect before/after: **[DAST.md](DAST.md)**
 
 ## License
 

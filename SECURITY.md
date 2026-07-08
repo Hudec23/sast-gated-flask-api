@@ -12,6 +12,8 @@ For **secrets-in-git** scanning (Gitleaks pre-commit + CI, distinct from V04 har
 
 For **dependency CVE scanning** (pip-audit + Dependabot, distinct from application vulns), see **[SCA.md](SCA.md)**.
 
+For **runtime DAST** (OWASP ZAP baseline in CI, catches V11 open redirect and complements SAST blind spots), see **[DAST.md](DAST.md)**.
+
 Do not deploy this application publicly.
 
 ---
@@ -160,9 +162,9 @@ These planted bugs are **not reliably caught** by the current CI configuration. 
 | V02 | Second SQLi pattern not tainted-tracked at ERROR severity | Lower Semgrep severity gate, custom rule, or CodeQL |
 | V04 | Bandit rates B105 as LOW; Semgrep secrets rules did not ERROR | Gitleaks, `detect-secrets`, or Bandit `-l` |
 | V06 | Path traversal needs path-concatenation rule at ERROR | Custom Semgrep rule for `Path / user_input` |
-| V07 | IDOR is missing authorization logic — not a code pattern | Manual review, integration tests, DAST |
+| V07 | IDOR is missing authorization logic — not a code pattern | Manual review, integration tests, DAST ([DAST.md](DAST.md)) |
 | V09 | XSS rules fire at WARNING, not ERROR | Add `--severity WARNING` gate or custom rule |
-| V11 | Open redirect not matched by default rulesets | Custom Semgrep rule for `redirect(request.args` |
+| V11 | Open redirect not matched by default rulesets | Custom Semgrep rule for `redirect(request.args` — or DAST ([DAST.md](DAST.md)) |
 | V14 | Stock rules miss multi-hop subprocess without `shell=True` | Custom taint rule in `.semgrep/tainted-subprocess.yml` (now in CI) |
 
 **Recommendation for production:** layer SAST with DAST (OWASP ZAP), dependency scanning (pip-audit), secrets scanning (Gitleaks), and periodic manual threat modeling.
@@ -207,4 +209,5 @@ How each vulnerability class should be fixed in a real codebase:
 - **`remediated` branch** — fix all V01–V14, demonstrate green SAST pipeline
 - **Gitleaks job** — implemented in Phase 3 ([SECRETS.md](SECRETS.md))
 - **pip-audit job** — implemented in Phase 4 ([SCA.md](SCA.md))
-- **DAST with OWASP ZAP** — catch V07 IDOR and runtime XSS
+- **DAST with OWASP ZAP** — implemented in Phase 5 ([DAST.md](DAST.md))
+- **ZAP active scan / OpenAPI import** — deeper coverage for POST/JSON endpoints

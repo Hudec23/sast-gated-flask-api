@@ -1,0 +1,8 @@
+http://127.0.0.1:5000/health
+http://127.0.0.1:5000/products
+http://127.0.0.1:5000/search/render?q=zap
+http://127.0.0.1:5000/login/redirect?next=https://evil.example
+http://127.0.0.1:5000/orders/1
+http://127.0.0.1:5000/orders/2
+http://127.0.0.1:5000/admin/debug
+http://127.0.0.1:5000/products/preview?url=http://example.com

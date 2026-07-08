@@ -126,7 +126,7 @@ uv run semgrep scan --config .semgrep/tainted-subprocess.yml src/webshop/routes/
 
 ## What I'd say in an interview
 
-> "We ran Bandit and Semgrep with fail-red gating. Bandit is an AST walker — great for Python sinks like `eval` and `shell=True`, but it doesn't track request data through helper functions. Semgrep adds taint rules: stock rules caught our SQLi and SSRF, but multi-hop command injection without `shell=True` needed a custom rule. That's why V14 exists — to prove I understand the difference between pattern matching and dataflow analysis, and when to write custom Semgrep rules. V07 IDOR still slips through both — that's where you'd add integration tests or DAST."
+> "We ran Bandit and Semgrep with fail-red gating. Bandit is an AST walker — great for Python sinks like `eval` and `shell=True`, but it doesn't track request data through helper functions. Semgrep adds taint rules: stock rules caught our SQLi and SSRF, but multi-hop command injection without `shell=True` needed a custom rule. That's why V14 exists — to prove I understand the difference between pattern matching and dataflow analysis, and when to write custom Semgrep rules. V07 IDOR still slips through SAST — Phase 5 DAST with OWASP ZAP catches V11 open redirect at runtime and seeds endpoints like `/orders/1` for IDOR probing."
 
 ---
 

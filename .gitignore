@@ -23,3 +23,8 @@ bandit-report.json
 semgrep-report.json
 semgrep-error-report.json
 semgrep-warning-report.json
+
+# Local DAST reports (CI uploads artifacts)
+dast-report.html
+dast-report-after.html
+zap-*.html

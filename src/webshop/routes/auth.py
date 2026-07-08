@@ -1,6 +1,8 @@
 import base64
 import hashlib
+import os
 import pickle
+from urllib.parse import urlparse
 
 from flask import Blueprint, jsonify, redirect, request
 
@@ -31,6 +33,11 @@ def restore_session():
 def login_redirect():
     """Post-login redirect — intentionally allows open redirect."""
     next_url = request.args.get("next", "/")
+    if os.getenv("DAST_REMEDIATED"):
+        parsed = urlparse(next_url)
+        if parsed.netloc or not next_url.startswith("/"):
+            next_url = "/"
+        return redirect(next_url)
     # VULN: V11-OpenRedirect — unvalidated redirect target; SAST demo only
     return redirect(next_url)
 

@@ -31,11 +31,9 @@ jobs:
       - name: ZAP baseline scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
-          target: "http://127.0.0.1:5000"
-          docker_options: "-u zap --network host"
-          cmd_options: "-l dast/zap-seeds.txt"
+          target: "http://127.0.0.1:5000/dast-sitemap"
+          cmd_options: "-j"
           artifact_name: zap-before-report
-          artifact_upload: true
           fail_action: true
 
   dast-after:
@@ -62,9 +60,7 @@ jobs:
       - name: ZAP baseline scan (remediated demo)
         uses: zaproxy/action-baseline@v0.14.0
         with:
-          target: "http://127.0.0.1:5000"
-          docker_options: "-u zap --network host"
-          cmd_options: "-l dast/zap-seeds.txt"
+          target: "http://127.0.0.1:5000/dast-sitemap"
+          cmd_options: "-j"
           artifact_name: zap-after-report
-          artifact_upload: true
           fail_action: false

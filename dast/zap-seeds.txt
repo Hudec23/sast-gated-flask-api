@@ -1,3 +1,5 @@
+# Canonical DAST seed URLs — mirrored by GET /dast-sitemap for ZAP spider discovery.
+# Note: zap-baseline -l is alert LEVEL (WARN/FAIL), not a URL list.
 http://127.0.0.1:5000/health
 http://127.0.0.1:5000/products
 http://127.0.0.1:5000/search/render?q=zap

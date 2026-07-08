@@ -49,7 +49,7 @@ flowchart TB
 | `dast-before` | Full vulns (default) | `true` | `zap-before-report` |
 | `dast-after` | `DAST_REMEDIATED=1` fixes V11 | `false` | `zap-after-report` |
 
-Seed URLs: [`dast/zap-seeds.txt`](dast/zap-seeds.txt) — ZAP does not spider JSON-only APIs well from `/` alone.
+Seed URLs: [`dast/zap-seeds.txt`](dast/zap-seeds.txt) — rendered as HTML links at `GET /dast-sitemap` for ZAP spider discovery (ZAP baseline has no URL-list flag; `-l` is alert level only).
 
 ---
 
@@ -74,9 +74,9 @@ uv sync
 uv run flask --app webshop:create_app run --host 127.0.0.1 --port 5000 &
 ./scripts/wait-for-health.sh
 
-# ZAP baseline via Docker (same seeds as CI)
+# ZAP baseline via Docker (spider starts at /dast-sitemap, follows seed links)
 docker run --rm --network host -v "$PWD:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
-  zap-baseline.py -t http://127.0.0.1:5000 -l dast/zap-seeds.txt -r dast-report.html
+  zap-baseline.py -t http://127.0.0.1:5000/dast-sitemap -j -r dast-report.html
 ```
 
 Compare remediated mode:
@@ -85,7 +85,7 @@ Compare remediated mode:
 DAST_REMEDIATED=1 uv run flask --app webshop:create_app run --host 127.0.0.1 --port 5000 &
 ./scripts/wait-for-health.sh
 docker run --rm --network host -v "$PWD:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:stable \
-  zap-baseline.py -t http://127.0.0.1:5000 -l dast/zap-seeds.txt -r dast-report-after.html
+  zap-baseline.py -t http://127.0.0.1:5000/dast-sitemap -j -r dast-report-after.html
 ```
 
 ---
